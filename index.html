@@ -12,17 +12,19 @@ body{max-width:100%; padding:15px 8px; background:#f5f7fa;}
 h1{text-align:center; color:#2c3e50; margin-bottom:12px; font-size:28px;}
 .info{background:#fff3cd; padding:15px; border-radius:8px; margin-bottom:18px; font-size:17px; line-height:1.7;}
 
-
-/* Membuat area scroll di HP jauh lebih mulus */
 .card{background:white; padding:15px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:18px; overflow-x:auto; -webkit-overflow-scrolling: touch;}
 h3{color:#34495e; margin-bottom:15px; font-size:22px;}
+h4{color:#2c3e50; margin: 20px 0 10px 0; font-size:19px;}
 
-/* Mengunci layout tabel agar kolom tidak mengecil paksa */
 table{min-width: 2350px; table-layout: fixed; border-collapse:collapse; margin-bottom:15px;}
 th,td{border:1px solid #ddd; padding:12px 6px; text-align:center; font-size:17px; white-space:nowrap; vertical-align:middle;}
 th{background:#2c3e50; color:white; font-weight:bold; font-size:18px;}
 
-/* Mengoptimalkan padding input agar teks memiliki ruang lebih luas */
+/* Tabel khusus rangkuman agar pas di layar HP tanpa scroll lebar */
+.tabel-ringkas {min-width: 100%; table-layout: fixed;}
+.tabel-ringkas th {background: #34495e;}
+.tabel-ringkas td {font-weight: bold;}
+
 input,select{width:100%; padding:12px 6px; border:2px solid #bbb; border-radius:6px; font-size:17px; text-align:center; background:#fff;}
 input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3px rgba(52,152,219,0.15);}
 
@@ -44,7 +46,6 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
 .baris-batal{background:#f8d7da !important; text-decoration:line-through;}
 #fileInput{display:none;}
 
-/* Teks petunjuk kecil untuk pengguna HP */
 .petunjuk-scroll { font-size: 14px; color: #7f8c8d; margin-bottom: 8px; display: block; text-align: right; font-style: italic; }
 </style>
 </head>
@@ -67,7 +68,6 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
   <table>
     <thead>
       <tr>
-        <!-- Mengunci ukuran lebar tiap kolom (Total minimal 2350px) -->
         <th style="width: 50px;">No</th>
         <th style="width: 180px;">Nama Pembeli</th>
         <th style="width: 150px;">Nama Reseller</th>
@@ -100,7 +100,7 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
 
 <div class="card">
   <h3>📊 RANGKUMAN OTOMATIS</h3>
-  <div class="ringkas">
+  <div class="ringkas" style="margin-bottom: 20px;">
     <div class="p1">Total Pesanan<br><span id="totPesanan">0</span> pcs</div>
     <div class="p2">Ukuran S/M/L/XL/XXL<br><span id="totUkuran">0/0/0/0/0</span></div>
     <div class="p3">Pendek / Panjang<br><span id="totModel">0 / 0</span></div>
@@ -109,6 +109,19 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
     <div class="p6">Total Modal<br>Rp <span id="totModal">0</span></div>
     <div class="p7">KEUNTUNGAN BERSIH<br>Rp <span id="totUntung">0</span></div>
   </div>
+
+  <h4>📋 DETAIL PRODUKSI (PER UKURAN & MODEL)</h4>
+  <table class="tabel-ringkas">
+    <thead>
+      <tr>
+        <th>Ukuran</th>
+        <th>Lengan Pendek</th>
+        <th>Lengan Panjang</th>
+      </tr>
+    </thead>
+    <tbody id="detailUkuranModel">
+      </tbody>
+  </table>
 </div>
 
 <script>
@@ -262,6 +275,15 @@ function hitungRingkasan(){
   let totPesanan=0, totS=0,totM=0,totL=0,totXL=0,totXXL=0;
   let totPendek=0,totPanjang=0,totReseller=0,totMasuk=0,totModal=0,totUntung=0;
   
+  // Objek penampung matriks kombinasi ukuran & model
+  let matriksDetail = {
+    "S": { Pendek: 0, Panjang: 0 },
+    "M": { Pendek: 0, Panjang: 0 },
+    "L": { Pendek: 0, Panjang: 0 },
+    "XL": { Pendek: 0, Panjang: 0 },
+    "XXL": { Pendek: 0, Panjang: 0 }
+  };
+  
   data.forEach(b => {
     totMasuk += b.bayar||0;
     if((b.status||"Aktif")==="Batal") return;
@@ -273,6 +295,14 @@ function hitungRingkasan(){
     totPesanan += jml;
     if(b.ukuran==='S')totS+=jml; if(b.ukuran==='M')totM+=jml; if(b.ukuran==='L')totL+=jml; if(b.ukuran==='XL')totXL+=jml; if(b.ukuran==='XXL')totXXL+=jml;
     if((b.model||"Pendek")==="Pendek")totPendek+=jml; else totPanjang+=jml;
+    
+    // Hitung kombinasi ukuran + model secara spesifik
+    const uk = b.ukuran || "S";
+    const mod = b.model || "Pendek";
+    if(matriksDetail[uk]) {
+      matriksDetail[uk][mod] += jml;
+    }
+
     totReseller += BAGI_HASIL * jml;
     totModal += modal * jml;
     totUntung += (harga * jml) - (modal * jml) - (BAGI_HASIL * jml);
@@ -285,6 +315,19 @@ function hitungRingkasan(){
   document.getElementById("totMasuk").textContent = totMasuk.toLocaleString('id-ID');
   document.getElementById("totModal").textContent = totModal.toLocaleString('id-ID');
   document.getElementById("totUntung").textContent = totUntung.toLocaleString('id-ID');
+
+  // Cetak baris tabel kombinasi ukuran & model secara otomatis
+  const isiDetail = document.getElementById("detailUkuranModel");
+  isiDetail.innerHTML = "";
+  for (let uk in matriksDetail) {
+    isiDetail.innerHTML += `
+      <tr>
+        <td style="background:#f8f9fa; font-weight:bold; color:#2c3e50;">Ukuran ${uk}</td>
+        <td>${matriksDetail[uk].Pendek} pcs</td>
+        <td style="color:#d35400;">${matriksDetail[uk].Panjang} pcs</td>
+      </tr>
+    `;
+  }
 }
 
 function unduhExcel(){
