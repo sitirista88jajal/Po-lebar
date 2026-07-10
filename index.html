@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Catatan PO Kaos - Ukuran Besar</title>
+<style>
+*{box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0;}
+html{font-size:18px;}
+body{max-width:100%; padding:15px 8px; background:#f5f7fa;}
+
+h1{text-align:center; color:#2c3e50; margin-bottom:12px; font-size:28px;}
+.info{background:#fff3cd; padding:15px; border-radius:8px; margin-bottom:18px; font-size:17px; line-height:1.7;}
+
+
+/* Membuat area scroll di HP jauh lebih mulus */
+.card{background:white; padding:15px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:18px; overflow-x:auto; -webkit-overflow-scrolling: touch;}
+h3{color:#34495e; margin-bottom:15px; font-size:22px;}
+
+/* Mengunci layout tabel agar kolom tidak mengecil paksa */
+table{min-width: 2350px; table-layout: fixed; border-collapse:collapse; margin-bottom:15px;}
+th,td{border:1px solid #ddd; padding:12px 6px; text-align:center; font-size:17px; white-space:nowrap; vertical-align:middle;}
+th{background:#2c3e50; color:white; font-weight:bold; font-size:18px;}
+
+/* Mengoptimalkan padding input agar teks memiliki ruang lebih luas */
+input,select{width:100%; padding:12px 6px; border:2px solid #bbb; border-radius:6px; font-size:17px; text-align:center; background:#fff;}
+input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3px rgba(52,152,219,0.15);}
+
+.tombol{padding:16px 14px; border:none; border-radius:8px; font-size:17px; font-weight:bold; cursor:pointer; margin:6px 4px; min-height:56px;}
+.tambah{background:#27ae60; color:white;}
+.simpan{background:#9b59b6; color:white;}
+.muat{background:#16a085; color:white;}
+.cetak{background:#f39c12; color:white;}
+.hapus{background:#e74c3c; color:white; padding:10px 18px; font-size:22px; width:auto;}
+
+.ringkas{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:12px;}
+.ringkas div{padding:18px; border-radius:8px; color:white; text-align:center; font-size:17px; line-height:1.6; font-weight:normal;}
+.p1{background:#8e44ad;} .p2{background:#3498db;} .p3{background:#16a085;}
+.p4{background:#d35400;} .p5{background:#27ae60;} .p6{background:#e74c3c;} .p7{background:#2980b9; font-weight:bold; font-size:19px;}
+
+.pesan{margin-top:12px; padding:12px; border-radius:6px; text-align:center; font-size:17px; display:none;}
+.sukses{background:#d4edda; color:#155724;}
+.error{background:#f8d7da; color:#721c24;}
+.baris-batal{background:#f8d7da !important; text-decoration:line-through;}
+#fileInput{display:none;}
+
+/* Teks petunjuk kecil untuk pengguna HP */
+.petunjuk-scroll { font-size: 14px; color: #7f8c8d; margin-bottom: 8px; display: block; text-align: right; font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>📦 CATATAN PRE ORDER KAOS</h1>
+<div class="info">
+⚠️ ATURAN HARGA & MODAL:<br>
+• Pendek Biasa: Jual 115.000 | Modal 70.000<br>
+• Pendek XXL: Jual 120.000 | Modal 75.000<br>
+• Panjang Biasa: Jual 125.000 | Modal 75.000<br>
+• Panjang XXL: Jual 130.000 | Modal 80.000<br>
+• Bagi hasil reseller: <b>Rp 10.000 / pcs</b><br>
+✅ <b>WAJIB:</b> Klik tombol <b>💾 Simpan Cadangan</b> sesudah selesai mencatat!
+</div>
+
+<div class="card">
+  <h3>Daftar Pesanan</h3>
+  <span class="petunjuk-scroll">↔️ Geser kanan-kiri untuk melihat kolom penuh</span>
+  <table>
+    <thead>
+      <tr>
+        <!-- Mengunci ukuran lebar tiap kolom (Total minimal 2350px) -->
+        <th style="width: 50px;">No</th>
+        <th style="width: 180px;">Nama Pembeli</th>
+        <th style="width: 150px;">Nama Reseller</th>
+        <th style="width: 130px;">Status</th>
+        <th style="width: 100px;">Ukuran</th>
+        <th style="width: 170px;">Model</th>
+        <th style="width: 120px;">Warna</th>
+        <th style="width: 90px;">Jumlah</th>
+        <th style="width: 140px;">Total Jual</th>
+        <th style="width: 140px;">Uang Masuk</th>
+        <th style="width: 140px;">Sisa Tagihan</th>
+        <th style="width: 150px;">Status Bayar</th>
+        <th style="width: 170px;">Tanggal Bayar</th>
+        <th style="width: 200px;">Keterangan</th>
+        <th style="width: 130px;">Modal</th>
+        <th style="width: 150px;">Bagian Reseller</th>
+        <th style="width: 160px;">Keuntungan Kamu</th>
+        <th style="width: 80px;">Hapus</th>
+      </tr>
+    </thead>
+    <tbody id="isiTabel"></tbody>
+  </table>
+  <button class="tombol tambah" onclick="tambahBaris()">+ Tambah Pesanan</button>
+  <button class="tombol simpan" onclick="simpanCadangan()">💾 Simpan Cadangan</button>
+  <button class="tombol muat" onclick="document.getElementById('fileInput').click()">📂 Buka Cadangan</button>
+  <button class="tombol cetak" onclick="unduhExcel()">📄 Unduh Excel</button>
+  <input type="file" id="fileInput" accept=".json" onchange="bukaCadangan(event)">
+  <div id="kotakPesan" class="pesan"></div>
+</div>
+
+<div class="card">
+  <h3>📊 RANGKUMAN OTOMATIS</h3>
+  <div class="ringkas">
+    <div class="p1">Total Pesanan<br><span id="totPesanan">0</span> pcs</div>
+    <div class="p2">Ukuran S/M/L/XL/XXL<br><span id="totUkuran">0/0/0/0/0</span></div>
+    <div class="p3">Pendek / Panjang<br><span id="totModel">0 / 0</span></div>
+    <div class="p4">Uang Reseller<br>Rp <span id="totReseller">0</span></div>
+    <div class="p5">Uang Sudah Masuk<br>Rp <span id="totMasuk">0</span></div>
+    <div class="p6">Total Modal<br>Rp <span id="totModal">0</span></div>
+    <div class="p7">KEUNTUNGAN BERSIH<br>Rp <span id="totUntung">0</span></div>
+  </div>
+</div>
+
+<script>
+const BAGI_HASIL = 10000;
+const DAFTAR_HARGA = {
+  pendek: {biasa:115000, xxl:120000},
+  panjang: {biasa:125000, xxl:130000}
+};
+const DAFTAR_MODAL = {
+  pendek: {biasa:70000, xxl:75000},
+  panjang: {biasa:75000, xxl:80000}
+};
+
+let data = [];
+const KUNCI_SIMPAN = "Catatan_PO_Kaos_2026";
+
+window.onload = () => {
+  const dataTersimpan = localStorage.getItem(KUNCI_SIMPAN);
+  if(dataTersimpan) {
+    try {
+      data = JSON.parse(dataTersimpan);
+      tampilkanPesan("✅ Data berhasil dimuat!", "sukses");
+    } catch {
+      tampilkanPesan("⚠️ Data lama rusak, silakan buka file cadangan", "error");
+    }
+  }
+  tampilkanTabel();
+};
+
+function simpanOtomatis(){
+  localStorage.setItem(KUNCI_SIMPAN, JSON.stringify(data));
+}
+
+function simpanCadangan(){
+  const berkas = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const tautan = document.createElement("a");
+  tautan.href = URL.createObjectURL(berkas);
+  const hariIni = new Date().toISOString().slice(0,10);
+  tautan.download = `Cadangan_PO_Kaos_${hariIni}.json`;
+  tautan.click();
+  tampilkanPesan("✅ File cadangan tersimpan di HP!", "sukses");
+}
+
+function bukaCadangan(peristiwa){
+  const berkas = peristiwa.target.files[0];
+  if(!berkas) return;
+  const baca = new FileReader();
+  baca.onload = function(e){
+    try {
+      data = JSON.parse(e.target.result);
+      simpanOtomatis();
+      tampilkanTabel();
+      tampilkanPesan("✅ Data dipulihkan dari cadangan!", "sukses");
+    } catch {
+      tampilkanPesan("❌ File tidak cocok atau rusak!", "error");
+    }
+  };
+  baca.readAsText(berkas);
+}
+
+function tambahBaris(){
+  data.push({
+    namaPembeli:"", namaReseller:"", status:"Aktif", ukuran:"S",
+    model:"Pendek", warna:"Putih", jumlah:1, bayar:0, tanggal:"", keterangan:""
+  });
+  tampilkanTabel();
+  simpanOtomatis();
+}
+
+function tampilkanTabel(){
+  const isi = document.getElementById("isiTabel");
+  isi.innerHTML = "";
+  data.forEach((baris, nomor) => {
+    const jenisUkuran = baris.ukuran === "XXL" ? "xxl" : "biasa";
+    const hargaSatuan = DAFTAR_HARGA[(baris.model||"Pendek").toLowerCase()][jenisUkuran];
+    const modalSatuan = DAFTAR_MODAL[(baris.model||"Pendek").toLowerCase()][jenisUkuran];
+    const totalJual = hargaSatuan * (baris.jumlah||1);
+    const sisa = totalJual - (baris.bayar||0);
+    const totalModal = modalSatuan * (baris.jumlah||1);
+    const bagianReseller = BAGI_HASIL * (baris.jumlah||1);
+    const untung = totalJual - totalModal - bagianReseller;
+    const kelas = (baris.status||"Aktif") === "Batal" ? "baris-batal" : "";
+
+    let teksBayar, warnaBayar;
+    if((baris.bayar||0) === 0) {
+      teksBayar = "🔴 Belum Bayar";
+      warnaBayar = "#dc3545";
+    } else if(sisa > 0) {
+      teksBayar = "🟡 Menyicil";
+      warnaBayar = "#ffc107";
+    } else {
+      teksBayar = "🟢 Lunas";
+      warnaBayar = "#28a745";
+    }
+
+    isi.innerHTML += `
+    <tr class="${kelas}">
+      <td>${nomor+1}</td>
+      <td><input type="text" value="${baris.namaPembeli||''}" onchange="ubahData(${nomor},'namaPembeli',this.value)"></td>
+      <td><input type="text" value="${baris.namaReseller||''}" onchange="ubahData(${nomor},'namaReseller',this.value)"></td>
+      <td><select onchange="ubahData(${nomor},'status',this.value)">
+        <option value="Aktif" ${(baris.status||'Aktif')==='Aktif'?'selected':''}>✅ Aktif</option>
+        <option value="Batal" ${(baris.status||'Aktif')==='Batal'?'selected':''}>❌ Batal</option>
+      </select></td>
+      <td><select onchange="ubahData(${nomor},'ukuran',this.value)">
+        <option value="S" ${baris.ukuran==='S'?'selected':''}>S</option>
+        <option value="M" ${baris.ukuran==='M'?'selected':''}>M</option>
+        <option value="L" ${baris.ukuran==='L'?'selected':''}>L</option>
+        <option value="XL" ${baris.ukuran==='XL'?'selected':''}>XL</option>
+        <option value="XXL" ${baris.ukuran==='XXL'?'selected':''}>XXL</option>
+      </select></td>
+      <td><select onchange="ubahData(${nomor},'model',this.value)">
+        <option value="Pendek" ${(baris.model||'Pendek')==='Pendek'?'selected':''}>Lengan Pendek</option>
+        <option value="Panjang" ${(baris.model||'Pendek')==='Panjang'?'selected':''}>Lengan Panjang</option>
+      </select></td>
+      <td><select onchange="ubahData(${nomor},'warna',this.value)">
+        <option value="Putih" ${(baris.warna||'Putih')==='Putih'?'selected':''}>Putih</option>
+        <option value="Hitam" ${(baris.warna||'Putih')==='Hitam'?'selected':''}>Hitam</option>
+      </select></td>
+      <td><input type="number" min="1" value="${baris.jumlah||1}" onchange="ubahData(${nomor},'jumlah',Number(this.value))"></td>
+      <td>Rp ${totalJual.toLocaleString('id-ID')}</td>
+      <td><input type="number" min="0" value="${baris.bayar||0}" onchange="ubahData(${nomor},'bayar',Number(this.value))"></td>
+      <td>Rp ${sisa.toLocaleString('id-ID')}</td>
+      <td style="color:${warnaBayar}; font-weight:bold; font-size:17px;">${teksBayar}</td>
+      <td><input type="date" value="${baris.tanggal||''}" onchange="ubahData(${nomor},'tanggal',this.value)"></td>
+      <td><input type="text" value="${baris.keterangan||''}" onchange="ubahData(${nomor},'keterangan',this.value)"></td>
+      <td>Rp ${totalModal.toLocaleString('id-ID')}</td>
+      <td>Rp ${bagianReseller.toLocaleString('id-ID')}</td>
+      <td>Rp ${untung.toLocaleString('id-ID')}</td>
+      <td><button class="tombol hapus" onclick="hapusBaris(${nomor})">×</button></td>
+    </tr>`;
+  });
+  hitungRingkasan();
+}
+
+function ubahData(index, kolom, nilai){
+  data[index][kolom] = nilai;
+  tampilkanTabel();
+  simpanOtomatis();
+}
+
+function hapusBaris(index){
+  if(confirm("Yakin hapus pesanan ini?")){
+    data.splice(index,1);
+    tampilkanTabel();
+    simpanOtomatis();
+  }
+}
+
+function hitungRingkasan(){
+  let totPesanan=0, totS=0,totM=0,totL=0,totXL=0,totXXL=0;
+  let totPendek=0,totPanjang=0,totReseller=0,totMasuk=0,totModal=0,totUntung=0;
+  
+  data.forEach(b => {
+    totMasuk += b.bayar||0;
+    if((b.status||"Aktif")==="Batal") return;
+    const jenis = b.ukuran==="XXL"?"xxl":"biasa";
+    const harga = DAFTAR_HARGA[(b.model||"Pendek").toLowerCase()][jenis];
+    const modal = DAFTAR_MODAL[(b.model||"Pendek").toLowerCase()][jenis];
+    const jml = b.jumlah||1;
+    
+    totPesanan += jml;
+    if(b.ukuran==='S')totS+=jml; if(b.ukuran==='M')totM+=jml; if(b.ukuran==='L')totL+=jml; if(b.ukuran==='XL')totXL+=jml; if(b.ukuran==='XXL')totXXL+=jml;
+    if((b.model||"Pendek")==="Pendek")totPendek+=jml; else totPanjang+=jml;
+    totReseller += BAGI_HASIL * jml;
+    totModal += modal * jml;
+    totUntung += (harga * jml) - (modal * jml) - (BAGI_HASIL * jml);
+  });
+
+  document.getElementById("totPesanan").textContent = totPesanan;
+  document.getElementById("totUkuran").textContent = `${totS}/${totM}/${totL}/${totXL}/${totXXL}`;
+  document.getElementById("totModel").textContent = `${totPendek} / ${totPanjang}`;
+  document.getElementById("totReseller").textContent = totReseller.toLocaleString('id-ID');
+  document.getElementById("totMasuk").textContent = totMasuk.toLocaleString('id-ID');
+  document.getElementById("totModal").textContent = totModal.toLocaleString('id-ID');
+  document.getElementById("totUntung").textContent = totUntung.toLocaleString('id-ID');
+}
+
+function unduhExcel(){
+  let isi = "No;NamaPembeli;Reseller;Status;Ukuran;Model;Warna;Jumlah;TotalJual;UangMasuk;Sisa;Tanggal;Keterangan;Modal;BagianReseller;Untung\n";
+  data.forEach((b,i)=>{
+    const jenis = b.ukuran==="XXL"?"xxl":"biasa";
+    const harga = DAFTAR_HARGA[(b.model||"Pendek").toLowerCase()][jenis];
+    const modal = DAFTAR_MODAL[(b.model||"Pendek").toLowerCase()][jenis];
+    const jml = b.jumlah||1;
+    isi += `${i+1};"${b.namaPembeli||''}";"${b.namaReseller||''}";"${b.status||'Aktif'}";${b.ukuran};"${b.model||'Pendek'}";"${b.warna||'Putih'}";${jml};${harga*jml};${b.bayar||0};${(harga*jml)-(b.bayar||0)};"${b.tanggal||''}";"${b.keterangan||''}";${modal*jml};${BAGI_HASIL*jml};${(harga*jml)-(modal*jml)-(BAGI_HASIL*jml)}\n`;
+  });
+  const berkas = new Blob([isi], {type:'text/csv;charset=utf-8'});
+  const tautan = document.createElement("a");
+  tautan.href = URL.createObjectURL(berkas);
+  tautan.download = "Data_PO_Excel.csv";
+  tautan.click();
+  tampilkanPesan("✅ File Excel siap diunduh!", "sukses");
+}
+
+function tampilkanPesan(teks, jenis){
+  const kotak = document.getElementById("kotakPesan");
+  kotak.textContent = teks;
+  kotak.className = `pesan ${jenis}`;
+  kotak.style.display = "block";
+  setTimeout(()=>kotak.style.display="none", 4000);
+}
+</script>
+</body>
+</html>
