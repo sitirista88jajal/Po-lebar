@@ -16,7 +16,7 @@ h1{text-align:center; color:#2c3e50; margin-bottom:12px; font-size:28px;}
 h3{color:#34495e; margin-bottom:15px; font-size:22px;}
 h4{color:#2c3e50; margin: 20px 0 10px 0; font-size:19px;}
 
-table{min-width: 2350px; table-layout: fixed; border-collapse:collapse; margin-bottom:15px;}
+table{min-width: 2500px; table-layout: fixed; border-collapse:collapse; margin-bottom:15px;}
 th,td{border:1px solid #ddd; padding:12px 6px; text-align:center; font-size:17px; white-space:nowrap; vertical-align:middle;}
 th{background:#2c3e50; color:white; font-weight:bold; font-size:18px;}
 
@@ -47,6 +47,18 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
 #fileInput{display:none;}
 
 .petunjuk-scroll { font-size: 14px; color: #7f8c8d; margin-bottom: 8px; display: block; text-align: right; font-style: italic; }
+
+/* Style Kotak Pencarian */
+.kotak-cari {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #ecf0f1;
+  border-radius: 6px;
+}
+.kotak-cari input {
+  text-align: left;
+  padding-left: 15px;
+}
 </style>
 </head>
 <body>
@@ -64,6 +76,11 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
 
 <div class="card">
   <h3>Daftar Pesanan</h3>
+  
+  <div class="kotak-cari">
+    <input type="text" id="inputCari" oninput="tampilkanTabel()" placeholder="🔍 Cari nama pembeli, reseller, ukuran, atau warna...">
+  </div>
+
   <span class="petunjuk-scroll">↔️ Geser kanan-kiri untuk melihat kolom penuh</span>
   <table>
     <thead>
@@ -82,6 +99,7 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
         <th style="width: 150px;">Status Bayar</th>
         <th style="width: 170px;">Tanggal Bayar</th>
         <th style="width: 200px;">Keterangan</th>
+        <th style="width: 160px;">Status Kirim</th>
         <th style="width: 130px;">Modal</th>
         <th style="width: 150px;">Bagian Reseller</th>
         <th style="width: 160px;">Keuntungan Kamu</th>
@@ -185,7 +203,7 @@ function bukaCadangan(peristiwa){
 function tambahBaris(){
   data.push({
     namaPembeli:"", namaReseller:"", status:"Aktif", ukuran:"S",
-    model:"Pendek", warna:"Putih", jumlah:1, bayar:0, tanggal:"", keterangan:""
+    model:"Pendek", warna:"Putih", jumlah:1, bayar:0, tanggal:"", keterangan:"", kirim:"Belum Dikirim"
   });
   tampilkanTabel();
   simpanOtomatis();
@@ -193,8 +211,20 @@ function tambahBaris(){
 
 function tampilkanTabel(){
   const isi = document.getElementById("isiTabel");
+  const kataKunci = document.getElementById("inputCari").value.toLowerCase();
   isi.innerHTML = "";
+  
   data.forEach((baris, nomor) => {
+    // Logika Pencarian
+    const matchNama = (baris.namaPembeli||'').toLowerCase().includes(kataKunci);
+    const matchReseller = (baris.namaReseller||'').toLowerCase().includes(kataKunci);
+    const matchUkuran = (baris.ukuran||'').toLowerCase().includes(kataKunci);
+    const matchWarna = (baris.warna||'').toLowerCase().includes(kataKunci);
+    
+    if (kataKunci && !matchNama && !matchReseller && !matchUkuran && !matchWarna) {
+      return; // Lewati baris jika tidak cocok dengan kata kunci
+    }
+
     const jenisUkuran = baris.ukuran === "XXL" ? "xxl" : "biasa";
     const hargaSatuan = DAFTAR_HARGA[(baris.model||"Pendek").toLowerCase()][jenisUkuran];
     const modalSatuan = DAFTAR_MODAL[(baris.model||"Pendek").toLowerCase()][jenisUkuran];
@@ -248,6 +278,12 @@ function tampilkanTabel(){
       <td style="color:${warnaBayar}; font-weight:bold; font-size:17px;">${teksBayar}</td>
       <td><input type="date" value="${baris.tanggal||''}" onchange="ubahData(${nomor},'tanggal',this.value)"></td>
       <td><input type="text" value="${baris.keterangan||''}" onchange="ubahData(${nomor},'keterangan',this.value)"></td>
+      
+      <td><select onchange="ubahData(${nomor},'kirim',this.value)">
+        <option value="Belum Dikirim" ${(baris.kirim||'Belum Dikirim')==='Belum Dikirim'?'selected':''}>📦 Belum Dikirim</option>
+        <option value="Sudah Dikirim" ${(baris.kirim||'Belum Dikirim')==='Sudah Dikirim'?'selected':''}>🚚 Sudah Dikirim</option>
+      </select></td>
+
       <td>Rp ${totalModal.toLocaleString('id-ID')}</td>
       <td>Rp ${bagianReseller.toLocaleString('id-ID')}</td>
       <td>Rp ${untung.toLocaleString('id-ID')}</td>
@@ -313,7 +349,7 @@ function hitungRingkasan(){
   document.getElementById("totModel").textContent = `${totPendek} / ${totPanjang}`;
   document.getElementById("totReseller").textContent = totReseller.toLocaleString('id-ID');
   document.getElementById("totMasuk").textContent = totMasuk.toLocaleString('id-ID');
-  document.getElementById("totModal").textContent = totModal.toLocaleString('id-ID');
+  document.getElementById("totModal").textContent = totModal.textContent = totModal.toLocaleString('id-ID');
   document.getElementById("totUntung").textContent = totUntung.toLocaleString('id-ID');
 
   // Cetak baris tabel kombinasi ukuran & model secara otomatis
@@ -331,13 +367,13 @@ function hitungRingkasan(){
 }
 
 function unduhExcel(){
-  let isi = "No;NamaPembeli;Reseller;Status;Ukuran;Model;Warna;Jumlah;TotalJual;UangMasuk;Sisa;Tanggal;Keterangan;Modal;BagianReseller;Untung\n";
+  let isi = "No;NamaPembeli;Reseller;Status;Ukuran;Model;Warna;Jumlah;TotalJual;UangMasuk;Sisa;Tanggal;Keterangan;StatusKirim;Modal;BagianReseller;Untung\n";
   data.forEach((b,i)=>{
     const jenis = b.ukuran==="XXL"?"xxl":"biasa";
     const harga = DAFTAR_HARGA[(b.model||"Pendek").toLowerCase()][jenis];
     const modal = DAFTAR_MODAL[(b.model||"Pendek").toLowerCase()][jenis];
     const jml = b.jumlah||1;
-    isi += `${i+1};"${b.namaPembeli||''}";"${b.namaReseller||''}";"${b.status||'Aktif'}";${b.ukuran};"${b.model||'Pendek'}";"${b.warna||'Putih'}";${jml};${harga*jml};${b.bayar||0};${(harga*jml)-(b.bayar||0)};"${b.tanggal||''}";"${b.keterangan||''}";${modal*jml};${BAGI_HASIL*jml};${(harga*jml)-(modal*jml)-(BAGI_HASIL*jml)}\n`;
+    isi += `${i+1};"${b.namaPembeli||''}";"${b.namaReseller||''}";"${b.status||'Aktif'}";${b.ukuran};"${b.model||'Pendek'}";"${b.warna||'Putih'}";${jml};${harga*jml};${b.bayar||0};${(harga*jml)-(b.bayar||0)};"${b.tanggal||''}";"${b.keterangan||''}";"${b.kirim||'Belum Dikirim'}";${modal*jml};${BAGI_HASIL*jml};${(harga*jml)-(modal*jml)-(BAGI_HASIL*jml)}\n`;
   });
   const berkas = new Blob([isi], {type:'text/csv;charset=utf-8'});
   const tautan = document.createElement("a");
