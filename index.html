@@ -78,7 +78,7 @@ input:focus, select:focus{outline:none; border-color:#3498db; box-shadow:0 0 0 3
   <h3>Daftar Pesanan</h3>
   
   <div class="kotak-cari">
-    <input type="text" id="inputCari" oninput="tampilkanTabel()" placeholder="🔍 Cari nama pembeli, reseller, ukuran, atau warna...">
+    <input type="text" id="inputCari" oninput="tampilkanTabel()" placeholder="🔍 Cari nama, reseller, ukuran, warna, status kirim, atau status bayar (lunas/menyicil/belum bayar)...">
   </div>
 
   <span class="petunjuk-scroll">↔️ Geser kanan-kiri untuk melihat kolom penuh</span>
@@ -215,35 +215,48 @@ function tampilkanTabel(){
   isi.innerHTML = "";
   
   data.forEach((baris, nomor) => {
-    // Logika Pencarian
+    const jenisUkuran = baris.ukuran === "XXL" ? "xxl" : "biasa";
+    const hargaSatuan = DAFTAR_HARGA[(baris.model||"Pendek").toLowerCase()][jenisUkuran];
+    const totalJual = hargaSatuan * (baris.jumlah||1);
+    const sisa = totalJual - (baris.bayar||0);
+    
+    // Tentukan Teks Status Bayar untuk pencarian
+    let teksBayarTeks = "";
+    if((baris.bayar||0) === 0) {
+      teksBayarTeks = "belum bayar";
+    } else if(sisa > 0) {
+      teksBayarTeks = "menyicil";
+    } else {
+      teksBayarTeks = "lunas";
+    }
+
+    // Logika Pencarian diperluas ke Status Bayar & Status Kirim
     const matchNama = (baris.namaPembeli||'').toLowerCase().includes(kataKunci);
     const matchReseller = (baris.namaReseller||'').toLowerCase().includes(kataKunci);
     const matchUkuran = (baris.ukuran||'').toLowerCase().includes(kataKunci);
     const matchWarna = (baris.warna||'').toLowerCase().includes(kataKunci);
+    const matchKirim = (baris.kirim||'Belum Dikirim').toLowerCase().includes(kataKunci);
+    const matchBayar = teksBayarTeks.includes(kataKunci);
     
-    if (kataKunci && !matchNama && !matchReseller && !matchUkuran && !matchWarna) {
-      return; // Lewati baris jika tidak cocok dengan kata kunci
+    if (kataKunci && !matchNama && !matchReseller && !matchUkuran && !matchWarna && !matchKirim && !matchBayar) {
+      return; // Lewati jika tidak cocok
     }
 
-    const jenisUkuran = baris.ukuran === "XXL" ? "xxl" : "biasa";
-    const hargaSatuan = DAFTAR_HARGA[(baris.model||"Pendek").toLowerCase()][jenisUkuran];
     const modalSatuan = DAFTAR_MODAL[(baris.model||"Pendek").toLowerCase()][jenisUkuran];
-    const totalJual = hargaSatuan * (baris.jumlah||1);
-    const sisa = totalJual - (baris.bayar||0);
     const totalModal = modalSatuan * (baris.jumlah||1);
     const bagianReseller = BAGI_HASIL * (baris.jumlah||1);
     const untung = totalJual - totalModal - bagianReseller;
     const kelas = (baris.status||"Aktif") === "Batal" ? "baris-batal" : "";
 
-    let teksBayar, warnaBayar;
+    let teksBayarHtml, warnaBayar;
     if((baris.bayar||0) === 0) {
-      teksBayar = "🔴 Belum Bayar";
+      teksBayarHtml = "🔴 Belum Bayar";
       warnaBayar = "#dc3545";
     } else if(sisa > 0) {
-      teksBayar = "🟡 Menyicil";
+      teksBayarHtml = "🟡 Menyicil";
       warnaBayar = "#ffc107";
     } else {
-      teksBayar = "🟢 Lunas";
+      teksBayarHtml = "🟢 Lunas";
       warnaBayar = "#28a745";
     }
 
@@ -275,7 +288,7 @@ function tampilkanTabel(){
       <td>Rp ${totalJual.toLocaleString('id-ID')}</td>
       <td><input type="number" min="0" value="${baris.bayar||0}" onchange="ubahData(${nomor},'bayar',Number(this.value))"></td>
       <td>Rp ${sisa.toLocaleString('id-ID')}</td>
-      <td style="color:${warnaBayar}; font-weight:bold; font-size:17px;">${teksBayar}</td>
+      <td style="color:${warnaBayar}; font-weight:bold; font-size:17px;">${teksBayarHtml}</td>
       <td><input type="date" value="${baris.tanggal||''}" onchange="ubahData(${nomor},'tanggal',this.value)"></td>
       <td><input type="text" value="${baris.keterangan||''}" onchange="ubahData(${nomor},'keterangan',this.value)"></td>
       
@@ -311,7 +324,6 @@ function hitungRingkasan(){
   let totPesanan=0, totS=0,totM=0,totL=0,totXL=0,totXXL=0;
   let totPendek=0,totPanjang=0,totReseller=0,totMasuk=0,totModal=0,totUntung=0;
   
-  // Objek penampung matriks kombinasi ukuran & model
   let matriksDetail = {
     "S": { Pendek: 0, Panjang: 0 },
     "M": { Pendek: 0, Panjang: 0 },
@@ -332,7 +344,6 @@ function hitungRingkasan(){
     if(b.ukuran==='S')totS+=jml; if(b.ukuran==='M')totM+=jml; if(b.ukuran==='L')totL+=jml; if(b.ukuran==='XL')totXL+=jml; if(b.ukuran==='XXL')totXXL+=jml;
     if((b.model||"Pendek")==="Pendek")totPendek+=jml; else totPanjang+=jml;
     
-    // Hitung kombinasi ukuran + model secara spesifik
     const uk = b.ukuran || "S";
     const mod = b.model || "Pendek";
     if(matriksDetail[uk]) {
@@ -349,10 +360,9 @@ function hitungRingkasan(){
   document.getElementById("totModel").textContent = `${totPendek} / ${totPanjang}`;
   document.getElementById("totReseller").textContent = totReseller.toLocaleString('id-ID');
   document.getElementById("totMasuk").textContent = totMasuk.toLocaleString('id-ID');
-  document.getElementById("totModal").textContent = totModal.textContent = totModal.toLocaleString('id-ID');
+  document.getElementById("totModal").textContent = totModal.toLocaleString('id-ID');
   document.getElementById("totUntung").textContent = totUntung.toLocaleString('id-ID');
 
-  // Cetak baris tabel kombinasi ukuran & model secara otomatis
   const isiDetail = document.getElementById("detailUkuranModel");
   isiDetail.innerHTML = "";
   for (let uk in matriksDetail) {
